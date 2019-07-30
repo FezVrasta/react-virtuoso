@@ -1,4 +1,4 @@
-import { useRef, useState, useLayoutEffect } from 'react'
+import { useRef, useState, useEffect, useLayoutEffect } from 'react'
 import ResizeObserver from 'resize-observer-polyfill'
 import { TInput, TOutput } from './rxio'
 
@@ -13,12 +13,15 @@ export type CallbackRefParam = HTMLElement | null
 export const useHeight: UseHeight = (input, onMount, onResize) => {
   const ref = useRef<CallbackRefParam>(null)
   const currentHeight = useRef(0)
+  const animationFrameID = useRef(null);
   const observer = new ResizeObserver(entries => {
     const newHeight = entries[0].contentRect.height
     if (currentHeight.current !== newHeight) {
       currentHeight.current = newHeight
       if (onResize) {
-        onResize(entries[0].target as HTMLElement)
+        animationFrameID.current = window.requestAnimationFrame(() =>
+          onResize(entries[0].target as HTMLElement)
+        );
       }
       input(newHeight)
     }
@@ -36,6 +39,10 @@ export const useHeight: UseHeight = (input, onMount, onResize) => {
       ref.current = null
     }
   }
+                         
+  useEffect(() => () =>
+    window.cancelAnimationFrame(animationFrameID.current)
+  );
   return callbackRef
 }
 
